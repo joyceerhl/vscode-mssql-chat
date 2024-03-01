@@ -1,5 +1,6 @@
 {
   "name": "vscode-mssql-chat",
+  "publisher": "joyceerhl",
   "displayName": "vscode-mssql-chat",
   "description": "SQL expertise for Copilot Chat",
   "version": "0.0.1",

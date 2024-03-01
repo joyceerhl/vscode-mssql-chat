@@ -19,7 +19,6 @@
   "enabledApiProposals": [
     "chatParticipant",
     "chatVariableResolver",
-    "defaultChatParticipant",
     "languageModels"
   ],
   "main": "./dist/extension.js",

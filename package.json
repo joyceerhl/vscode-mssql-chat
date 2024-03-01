@@ -9,7 +9,19 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "extensionDependencies": [
+    "github.copilot-chat",
+    "ms-mssql.mssql"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ], 
+  "enabledApiProposals": [
+    "chatParticipant",
+    "chatVariableResolver",
+    "defaultChatParticipant",
+    "languageModels"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [

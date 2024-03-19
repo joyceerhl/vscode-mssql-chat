@@ -14,9 +14,6 @@
     "github.copilot-chat",
     "ms-mssql.mssql"
   ],
-  "activationEvents": [
-    "onStartupFinished"
-  ], 
   "enabledApiProposals": [
     "chatParticipant",
     "chatVariableResolver",
@@ -24,12 +21,27 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "chatParticipants": [
+      {
+        "name": "mssql",
+        "description": "Generate queries for your SQL database"
+      }
+    ],
     "commands": [
       {
-        "command": "vscode-mssql-chat.helloWorld",
-        "title": "Hello World"
+        "command": "vscode-mssql-chat.summarizeDatabase",
+        "title": "Summarize Database"
       }
-    ]
+    ],
+    "menus": {
+      "view/item/context": [
+        {
+          "command": "vscode-mssql-chat.summarizeDatabase",
+          "when": "view == objectExplorer && viewItem =~ /^(Server|Database)$/",
+          "group": "sqlchat@1"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run package",

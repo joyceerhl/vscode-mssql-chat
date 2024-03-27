@@ -8,7 +8,7 @@ import { getDatabaseContext, runQuery } from './utils';
 export function activate(context: vscode.ExtensionContext) {
 
 	// Register a chat participant that can respond to user queries
-	const participant = vscode.chat.createChatParticipant('mssql', async (request: vscode.ChatRequest, context: vscode.ChatContext, response: vscode.ChatResponseStream, token: vscode.CancellationToken) => {
+	const participant = vscode.chat.createChatParticipant('vscode-mssql-chat', async (request: vscode.ChatRequest, context: vscode.ChatContext, response: vscode.ChatResponseStream, token: vscode.CancellationToken) => {
 		response.progress('Reading database context...');
 
 		const userMessage = await generateUserPrompt(request.prompt);

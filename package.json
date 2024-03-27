@@ -23,7 +23,9 @@
   "contributes": {
     "chatParticipants": [
       {
+        "id": "vscode-mssql-chat",
         "name": "mssql",
+        "isSticky": true,
         "description": "Generate queries for your SQL database"
       }
     ],

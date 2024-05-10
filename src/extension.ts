@@ -13,11 +13,17 @@ export function activate(context: vscode.ExtensionContext) {
 
 		const userMessage = await generateUserPrompt(request.prompt);
 		const messages = [
-			new vscode.LanguageModelChatSystemMessage(generateSystemPrompt()),
-			new vscode.LanguageModelChatUserMessage(userMessage),
+			new vscode.LanguageModelChatMessage(vscode.LanguageModelChatMessageRole.User, generateSystemPrompt()),
+			new vscode.LanguageModelChatMessage(vscode.LanguageModelChatMessageRole.User, userMessage),
 		];
 
-		const chatRequest = await vscode.lm.sendChatRequest('copilot-gpt-4', messages, {}, token);
+		const lm = await vscode.lm.selectChatModels({ family: 'gpt-4', vendor: 'copilot' });
+		if (!lm) {
+			response.markdown('Sorry, I am unable to respond to your request at this time.');
+			return {};
+		}
+
+		const chatRequest = await lm?.[0].sendRequest(messages, {}, token);
 
 		let data = '';
 		for await (const part of chatRequest.stream) {
@@ -34,13 +40,6 @@ export function activate(context: vscode.ExtensionContext) {
 
 		return {};
 	});
-
-	participant.isSticky = true;
-	participant.followupProvider = {
-		provideFollowups: (result: vscode.ChatResult, token: vscode.CancellationToken) => {
-			return [];
-		}
-	};
 
 	context.subscriptions.push(participant);
 

@@ -8,76 +8,43 @@ import { getDatabaseContext, runQuery } from './utils';
 export function activate(context: vscode.ExtensionContext) {
 
 	// Register a chat participant that can respond to user queries
-	const participant = vscode.chat.createChatParticipant('vscode-mssql-chat', async (request: vscode.ChatRequest, context: vscode.ChatContext, response: vscode.ChatResponseStream, token: vscode.CancellationToken) => {
-		response.progress('Reading database context...');
+	vscode.chat.createChatParticipant('mssql', async (request: vscode.ChatRequest, context: vscode.ChatContext, response: vscode.ChatResponseStream, token: vscode.CancellationToken) => {
+		const userQuery = request.prompt;
 
-		const userMessage = await generateUserPrompt(request.prompt);
+		const lm = await vscode.lm.selectChatModels({ 'vendor': 'copilot', 'version': 'gpt-4' });
+		if (!lm) {
+			response.markdown('Sorry, I couldn\'t complete that request.');
+			return;
+		}
+
 		const messages = [
-			new vscode.LanguageModelChatMessage(vscode.LanguageModelChatMessageRole.User, generateSystemPrompt()),
-			new vscode.LanguageModelChatMessage(vscode.LanguageModelChatMessageRole.User, userMessage),
+			new vscode.LanguageModelChatMessage(vscode.LanguageModelChatMessageRole.User, 'You must return your suggested SQL query in a markdown code block that begins with ```sql and ends with ```.'),
+			new vscode.LanguageModelChatMessage(vscode.LanguageModelChatMessageRole.User, await getDatabaseContext() + '\n' + userQuery)
 		];
 
-		const lm = await vscode.lm.selectChatModels({ family: 'gpt-4', vendor: 'copilot' });
-		if (!lm) {
-			response.markdown('Sorry, I am unable to respond to your request at this time.');
-			return {};
+		const chatRequest = await lm[0].sendRequest(messages, {}, token);
+		let query = '';
+		for await (const data of chatRequest.text) {
+			query += data;
+			response.markdown(data);
 		}
 
-		const chatRequest = await lm?.[0].sendRequest(messages, {}, token);
-
-		let data = '';
-		for await (const part of chatRequest.stream) {
-			data += part;
-			response.markdown(part);
+		const sqlRegex = /```([^\n])*\n([\s\S]*?)\n?```/g;
+		const match = sqlRegex.exec(query);
+		if (match && match[2]) {
+			response.button({ command: 'vscode-mssql-chat.runQuery', title: 'Run Query', arguments: [match[2]] });
 		}
-
-		const regex = /```([^\n])*\n([\s\S]*?)\n?```/g;
-		const match = regex.exec(data);
-		const query = match ? match[2] : '';
-		if (query) {
-			response.button({ title: 'Run Query', command: 'vscode-mssql-chat.runQuery', arguments: [query] });
-		}
-
-		return {};
 	});
 
-	context.subscriptions.push(participant);
-
 	// Register a command to run the SQL query from the chat response
-	context.subscriptions.push(vscode.commands.registerCommand('vscode-mssql-chat.runQuery', async (query: string) => {
+	vscode.commands.registerCommand('vscode-mssql-chat.runQuery', (query: string) => {
 		runQuery(query);
-	}));
+	});
 
 	// Register a variable exposing the same context to be reused with other chat participants
-	context.subscriptions.push(vscode.chat.registerChatVariableResolver('database', 'The context of the user\'s database', {
-		resolve: async (name: string, context: vscode.ChatVariableContext, token: vscode.CancellationToken) => ([{
-			level: vscode.ChatVariableLevel.Full,
-			value: await getDatabaseContext(false),
-			description: 'Here are the creation scripts that were used to create the tables in my database. Pay close attention to the tables and columns that are available in my database.'
-		}])
-	}));
 
 	// Register a command that can be invoked to get a summary of the user's database context
-	// This will be integrated into the tree item context menu in the SQL Server view
-	// and will submit a request to the chat participant to provide a summary of the user's database
-	context.subscriptions.push(vscode.commands.registerCommand('vscode-mssql-chat.summarizeDatabase', async () => {
-		vscode.commands.executeCommand('workbench.action.chat.open', `@mssql Give me an overview of this database.`);
-	}));
 }
 
 // This method is called when your extension is deactivated
 export function deactivate() { }
-
-function generateSystemPrompt() {
-	return `
-You are an expert in Microsoft SQL Server, Azure SQL Database, and writing T-SQL queries.
-Your job is to help the user write readable and performant SQL queries.
-Pay close attention to the provided context about the user's database and the desired output.
-Provide your suggested SQL query inside a Markdown code block that starts with \`\`\`sql and ends with \`\`\`.`;
-}
-
-async function generateUserPrompt(userQuery: string): Promise<string> {
-	return `
-SQL query description: ${userQuery}
-Database context: ${await getDatabaseContext()}`;
-}

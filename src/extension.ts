@@ -42,8 +42,18 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 
 	// Register a variable exposing the same context to be reused with other chat participants
+	context.subscriptions.push(vscode.chat.registerChatVariableResolver('database', 'The context of the user\'s database', {
+		resolve: async (name: string, context: vscode.ChatVariableContext, token: vscode.CancellationToken) => ([{
+			level: vscode.ChatVariableLevel.Full,
+			value: await getDatabaseContext(false),
+			description: 'Here are the creation scripts that were used to create the tables in my database. Pay close attention to the tables and columns that are available in my database.'
+		}])
+	}));
 
 	// Register a command that can be invoked to get a summary of the user's database context
+	context.subscriptions.push(vscode.commands.registerCommand('vscode-mssql-chat.summarizeDatabase', async () => {
+		vscode.commands.executeCommand('workbench.action.chat.open', `@mssql Give me an overview of this database.`);
+	}));
 }
 
 // This method is called when your extension is deactivated

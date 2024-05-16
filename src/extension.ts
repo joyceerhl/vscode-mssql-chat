@@ -42,7 +42,7 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 
 	// Register a variable exposing the same context to be reused with other chat participants
-	context.subscriptions.push(vscode.chat.registerChatVariableResolver('database', 'The context of the user\'s database', {
+	context.subscriptions.push(vscode.chat.registerChatVariableResolver('vscode-mssql-chat-database', 'database', 'The context of the user\'s database', 'The context of the user\'s database', false, {
 		resolve: async (name: string, context: vscode.ChatVariableContext, token: vscode.CancellationToken) => ([{
 			level: vscode.ChatVariableLevel.Full,
 			value: await getDatabaseContext(false),
